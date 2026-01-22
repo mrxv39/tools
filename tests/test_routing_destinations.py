@@ -4,10 +4,6 @@ from src.config import load_config
 from src.route_actions import route_payload
 
 
-# ============================================================
-# Helpers de aislamiento
-# ============================================================
-
 def _force_target(monkeypatch, target_value: str):
     import src.route_actions as ra
     monkeypatch.setattr(ra, "classify_target", lambda _text: target_value)
@@ -61,17 +57,7 @@ def _patch_popen(monkeypatch):
     return calls
 
 
-# ============================================================
-# TESTS
-# ============================================================
-
 def test_sublime_ok_path_exists(monkeypatch, tmp_path):
-    """
-    Sublime correcto:
-    - hay ruta
-    - el archivo existe
-    - se pega SOLO el contenido
-    """
     _force_target(monkeypatch, "sublime")
     calls = _patch_clipboard(monkeypatch)
     _patch_sublime_noop(monkeypatch)
@@ -92,18 +78,21 @@ def test_sublime_ok_path_exists(monkeypatch, tmp_path):
 
 
 def test_sublime_without_path_is_blocked(monkeypatch):
-    """
-    Sublime SIN ruta:
-    - NO pega
-    - NO abre Sublime
-    - NO abre CMD
-    - NO abre PowerShell
-    """
     _force_target(monkeypatch, "sublime")
     calls = _patch_clipboard(monkeypatch)
     _patch_sublime_noop(monkeypatch)
-
     popen = _patch_popen(monkeypatch)
+
+    # NUEVO: debe mostrar alerta
+    import src.route_actions as ra
+    alert_calls = {"n": 0, "title": None, "msg": None}
+
+    def _fake_alert(title, message):
+        alert_calls["n"] += 1
+        alert_calls["title"] = title
+        alert_calls["msg"] = message
+
+    monkeypatch.setattr(ra, "show_alert", _fake_alert)
 
     cfg = load_config()
     cfg.debug = False
@@ -113,15 +102,10 @@ def test_sublime_without_path_is_blocked(monkeypatch):
     assert calls["with_clip"] == 0
     assert calls["paste"] == 0
     assert popen["n"] == 0
+    assert alert_calls["n"] == 1
 
 
 def test_sublime_creates_file_if_missing(monkeypatch, tmp_path):
-    """
-    Sublime con ruta válida pero archivo inexistente:
-    - crea carpetas
-    - crea archivo
-    - pega contenido
-    """
     _force_target(monkeypatch, "sublime")
     calls = _patch_clipboard(monkeypatch)
     _patch_sublime_noop(monkeypatch)
@@ -142,11 +126,6 @@ def test_sublime_creates_file_if_missing(monkeypatch, tmp_path):
 
 
 def test_cmd_always_opens_new_window(monkeypatch):
-    """
-    CMD:
-    - SIEMPRE abre ventana nueva
-    - pega comandos
-    """
     _force_target(monkeypatch, "cmd")
     calls = _patch_clipboard(monkeypatch)
     popen = _patch_popen(monkeypatch)
@@ -167,11 +146,6 @@ def test_cmd_always_opens_new_window(monkeypatch):
 
 
 def test_powershell_always_opens_new_window(monkeypatch):
-    """
-    PowerShell:
-    - SIEMPRE abre ventana nueva
-    - pega comandos
-    """
     _force_target(monkeypatch, "powershell")
     calls = _patch_clipboard(monkeypatch)
     popen = _patch_popen(monkeypatch)
