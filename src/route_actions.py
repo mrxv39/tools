@@ -1,49 +1,82 @@
-# C:\Users\Usuario\tools\chatgpt_router\src\route_actions.py
 import time
+import os
+import subprocess
 
 from src.classify import classify_target
 from src.windowing import (
-    activate_or_launch,
     activate_sublime_for_project,
     launch_sublime_opening_file,
 )
 from src.paste_actions import with_temporary_clipboard, paste_into_active_window
+from src.fs_utils import ensure_file_exists
+
+
+def _launch_new_cmd_and_paste(text: str, press_enter: bool):
+    """
+    Abre SIEMPRE una nueva ventana de CMD y pega el texto ahí.
+    """
+    subprocess.Popen(["cmd.exe"], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    time.sleep(0.6)
+    with_temporary_clipboard(text, lambda: paste_into_active_window(press_enter))
+
+
+def _launch_new_powershell_and_paste(text: str, press_enter: bool):
+    """
+    Abre SIEMPRE una nueva ventana de PowerShell y pega el texto ahí.
+    """
+    subprocess.Popen(
+        ["powershell.exe"],
+        creationflags=subprocess.CREATE_NEW_CONSOLE,
+    )
+    time.sleep(0.6)
+    with_temporary_clipboard(text, lambda: paste_into_active_window(press_enter))
 
 
 def route_payload(cfg, payload_text: str, file_path: str | None, project_folder: str | None):
     target = classify_target(payload_text)
     print(f"[{time.strftime('%H:%M:%S')}] Copiado detectado -> destino: {target}")
 
-    if target == "powershell":
-        ok = activate_or_launch(cfg.powershell_title_contains, cfg.powershell_launch)
+    # ===== CMD =====
+    if target == "cmd":
         if cfg.debug:
-            print(f"  [DBG] activate powershell ok={ok}")
-        if ok:
-            with_temporary_clipboard(payload_text, lambda: paste_into_active_window(cfg.press_enter_in_terminal))
+            print("  [DBG] launching NEW CMD window")
+        _launch_new_cmd_and_paste(payload_text, cfg.press_enter_in_terminal)
         return
 
-    if target == "cmd":
-        ok = activate_or_launch(cfg.cmd_title_contains, cfg.cmd_launch)
+    # ===== POWERSHELL =====
+    if target == "powershell":
         if cfg.debug:
-            print(f"  [DBG] activate cmd ok={ok}")
-        if ok:
-            with_temporary_clipboard(payload_text, lambda: paste_into_active_window(cfg.press_enter_in_terminal))
+            print("  [DBG] launching NEW PowerShell window")
+        _launch_new_powershell_and_paste(payload_text, cfg.press_enter_in_terminal)
         return
+
+    # ===== SUBLIME =====
+    if not file_path:
+        print("  [WARN] Bloqueado: destino=sublime pero el portapapeles NO trae ruta de archivo en la primera línea.")
+        print("  [WARN] Formato requerido:\n"
+              "         C:\\ruta\\al\\archivo.ext\n"
+              "         <código...>\n")
+        return
+
+    file_path = os.path.normpath(file_path)
+
+    try:
+        created = ensure_file_exists(file_path)
+    except Exception as e:
+        print(f"  [ERROR] No se pudo asegurar/crear el archivo: {file_path} -> {e}")
+        return
+
+    if cfg.debug:
+        print(f"  [DBG] sublime file_path={file_path}")
+        print(f"  [DBG] sublime file_exists={os.path.exists(file_path)} created={created}")
+        print(f"  [DBG] sublime project_folder={project_folder}")
 
     activated = activate_sublime_for_project(project_folder, file_path)
-    if cfg.debug:
-        print(f"  [DBG] activate_sublime_for_project(folder={project_folder}, file={file_path}) -> {activated}")
-
     if not activated:
         sublime_exe = cfg.sublime_launch[0] if cfg.sublime_launch else ""
-        launched = launch_sublime_opening_file(sublime_exe, project_folder, file_path)
-        if cfg.debug:
-            print(f"  [DBG] launch_sublime_opening_file -> {launched}")
+        launch_sublime_opening_file(sublime_exe, project_folder, file_path)
         time.sleep(0.4)
         activate_sublime_for_project(project_folder, file_path)
 
     if payload_text.strip():
         with_temporary_clipboard(payload_text, lambda: paste_into_active_window(False))
-    else:
-        if cfg.debug:
-            print("  [DBG] payload_text vacío (nada que pegar)")
