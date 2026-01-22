@@ -7,11 +7,19 @@ from src.screen_capture import clamp_region, save_region_shot_mss, region_to_mon
 from src.template_match import load_template_gray, match_multiscale
 
 
-def _region_from_click(click_x: int, click_y: int, half_box_px: int) -> Tuple[int, int, int, int]:
-    size = int(half_box_px) * 2
-    left = int(click_x - half_box_px)
-    top = int(click_y - half_box_px)
-    return clamp_region(left, top, size, size)
+def _region_from_click_asymmetric(
+    click_x: int,
+    click_y: int,
+    left_px: int,
+    right_px: int,
+    up_px: int,
+    down_px: int,
+) -> Tuple[int, int, int, int]:
+    left = int(click_x - left_px)
+    top = int(click_y - up_px)
+    width = int(left_px + right_px)
+    height = int(up_px + down_px)
+    return clamp_region(left, top, width, height)
 
 
 def _poll_template_in_region(
@@ -27,7 +35,10 @@ def _poll_template_in_region(
     tag_prefix: str,
 ) -> bool:
     if debug:
-        print(f"  [DBG] region={region} thr={confidence} window_s={window_s} poll_s={poll_s} want_present={want_present}")
+        print(
+            f"  [DBG] region={region} thr={confidence} "
+            f"window_s={window_s} poll_s={poll_s} want_present={want_present}"
+        )
 
     if debug and debug_screenshots:
         p = save_region_shot_mss(debug_dir, region, f"{tag_prefix}_region_start")
@@ -78,12 +89,20 @@ def find_within_window_near_click(
     poll_s: float,
     click_x: int,
     click_y: int,
-    half_box_px: int = 50,
+    half_box_px: int = 50,  # compat: ignorado (ahora región asimétrica fija)
     debug: bool = False,
     debug_screenshots: bool = False,
     debug_dir: str = r".\debug_shots",
 ) -> bool:
-    region = _region_from_click(click_x, click_y, half_box_px)
+    region = _region_from_click_asymmetric(
+        click_x=click_x,
+        click_y=click_y,
+        left_px=75,
+        right_px=100,
+        up_px=20,
+        down_px=20,
+    )
+
     return _poll_template_in_region(
         template_path=template_path,
         confidence=confidence,
@@ -105,12 +124,20 @@ def wait_until_absent_near_click(
     poll_s: float,
     click_x: int,
     click_y: int,
-    half_box_px: int = 50,
+    half_box_px: int = 50,  # compat: ignorado (ahora región asimétrica fija)
     debug: bool = False,
     debug_screenshots: bool = False,
     debug_dir: str = r".\debug_shots",
 ) -> bool:
-    region = _region_from_click(click_x, click_y, half_box_px)
+    region = _region_from_click_asymmetric(
+        click_x=click_x,
+        click_y=click_y,
+        left_px=75,
+        right_px=100,
+        up_px=20,
+        down_px=20,
+    )
+
     return _poll_template_in_region(
         template_path=template_path,
         confidence=confidence,
