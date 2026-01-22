@@ -1,13 +1,17 @@
-# C:\Users\Usuario\tools\chatgpt_router\src\config.py
 from dataclasses import dataclass
 
 
 @dataclass
 class Config:
     template_copiado_path: str = r".\copiado.png"
+    template_copiarcodigo_path: str = r".\copiarcodigo.png"
+
     image_confidence: float = 0.78
 
     search_window_s: float = 1.0
+    copy_button_search_window_s: float = 0.35
+    copy_button_disappear_window_s: float = 1.50
+
     search_poll_interval_s: float = 0.10
 
     cooldown_s: float = 0.25
@@ -25,15 +29,17 @@ class Config:
     debug_screenshots: bool = True
     debug_dir: str = r".\debug_shots"
 
-    # ✅ ±50px desde el click => 100x100
     half_box_px: int = 50
 
 
 def load_config() -> Config:
     return Config(
         template_copiado_path=r".\copiado.png",
+        template_copiarcodigo_path=r".\copiarcodigo.png",
         image_confidence=0.78,
         search_window_s=1.0,
+        copy_button_search_window_s=0.35,
+        copy_button_disappear_window_s=1.50,
         search_poll_interval_s=0.10,
         cooldown_s=0.25,
         press_enter_in_terminal=False,

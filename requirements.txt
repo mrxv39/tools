@@ -1,8 +1,6 @@
-pyautogui
-opencv-python
-pyperclip
-pywin32
-pynput
-psutil
 mss
+opencv-python
+pynput
+pyautogui
 numpy
+pytest
