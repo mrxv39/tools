@@ -1,0 +1,47 @@
+# C:\Users\Usuario\tools\chatgpt_router\src\config.py
+from dataclasses import dataclass
+
+
+@dataclass
+class Config:
+    template_copiado_path: str = r".\copiado.png"
+    image_confidence: float = 0.78
+
+    search_window_s: float = 1.0
+    search_poll_interval_s: float = 0.10
+
+    cooldown_s: float = 0.25
+    press_enter_in_terminal: bool = False
+
+    cmd_title_contains: tuple = ("Command Prompt", "cmd.exe", "Símbolo del sistema")
+    powershell_title_contains: tuple = ("Windows PowerShell", "PowerShell", "pwsh", "Terminal")
+    sublime_title_contains: tuple = ("Sublime Text",)
+
+    cmd_launch: list | None = None
+    powershell_launch: list | None = None
+    sublime_launch: list | None = None
+
+    debug: bool = True
+    debug_screenshots: bool = True
+    debug_dir: str = r".\debug_shots"
+
+    # ✅ ±50px desde el click => 100x100
+    half_box_px: int = 50
+
+
+def load_config() -> Config:
+    return Config(
+        template_copiado_path=r".\copiado.png",
+        image_confidence=0.78,
+        search_window_s=1.0,
+        search_poll_interval_s=0.10,
+        cooldown_s=0.25,
+        press_enter_in_terminal=False,
+        cmd_launch=["cmd.exe"],
+        powershell_launch=["powershell.exe"],
+        sublime_launch=[r"C:\Program Files\Sublime Text\sublime_text.exe"],
+        debug=True,
+        debug_screenshots=True,
+        debug_dir=r".\debug_shots",
+        half_box_px=50,
+    )
