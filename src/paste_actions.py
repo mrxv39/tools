@@ -1,4 +1,4 @@
-# C:\Users\Usuario\tools\chatgpt_router\src\paste_actions.py
+
 import time
 import pyautogui
 import pyperclip
@@ -9,6 +9,17 @@ def paste_into_active_window(press_enter: bool):
     time.sleep(0.05)
     if press_enter:
         pyautogui.press("enter")
+
+
+def copy_all_text_from_active_window_to_clipboard():
+    """
+    Copia al portapapeles todo el texto accesible de la ventana activa (CMD/PowerShell).
+    Nota: depende de atajos estándar (Ctrl+A, Ctrl+C).
+    """
+    pyautogui.hotkey("ctrl", "a")
+    time.sleep(0.05)
+    pyautogui.hotkey("ctrl", "c")
+    time.sleep(0.08)
 
 
 def with_temporary_clipboard(text_to_paste: str, fn):

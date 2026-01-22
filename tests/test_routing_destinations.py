@@ -1,3 +1,4 @@
+
 import os
 
 from src.config import load_config
@@ -34,6 +35,18 @@ def _patch_clipboard(monkeypatch):
     return calls
 
 
+def _patch_terminal_copy(monkeypatch):
+    import src.route_actions as ra
+
+    calls = {"copy_all": 0}
+
+    def _copy_all():
+        calls["copy_all"] += 1
+
+    monkeypatch.setattr(ra, "copy_all_text_from_active_window_to_clipboard", _copy_all)
+    return calls
+
+
 def _patch_sublime_noop(monkeypatch):
     import src.route_actions as ra
     monkeypatch.setattr(ra, "activate_sublime_for_project", lambda *a, **k: True)
@@ -48,7 +61,10 @@ def _patch_popen(monkeypatch):
     def _fake_popen(args, **kwargs):
         calls["n"] += 1
         calls["args"] = args
-        class _P: ...
+
+        class _P:
+            ...
+
         return _P()
 
     monkeypatch.setattr(ra.subprocess, "Popen", _fake_popen)
@@ -60,6 +76,7 @@ def _patch_popen(monkeypatch):
 def test_sublime_ok_path_exists(monkeypatch, tmp_path):
     _force_target(monkeypatch, "sublime")
     calls = _patch_clipboard(monkeypatch)
+    term = _patch_terminal_copy(monkeypatch)
     _patch_sublime_noop(monkeypatch)
 
     cfg = load_config()
@@ -75,15 +92,16 @@ def test_sublime_ok_path_exists(monkeypatch, tmp_path):
     assert calls["paste"] == 1
     assert calls["last_text"] == payload
     assert calls["last_enter"] is False
+    assert term["copy_all"] == 0
 
 
 def test_sublime_without_path_is_blocked(monkeypatch):
     _force_target(monkeypatch, "sublime")
     calls = _patch_clipboard(monkeypatch)
+    term = _patch_terminal_copy(monkeypatch)
     _patch_sublime_noop(monkeypatch)
     popen = _patch_popen(monkeypatch)
 
-    # NUEVO: debe mostrar alerta
     import src.route_actions as ra
     alert_calls = {"n": 0, "title": None, "msg": None}
 
@@ -103,11 +121,13 @@ def test_sublime_without_path_is_blocked(monkeypatch):
     assert calls["paste"] == 0
     assert popen["n"] == 0
     assert alert_calls["n"] == 1
+    assert term["copy_all"] == 0
 
 
 def test_sublime_creates_file_if_missing(monkeypatch, tmp_path):
     _force_target(monkeypatch, "sublime")
     calls = _patch_clipboard(monkeypatch)
+    term = _patch_terminal_copy(monkeypatch)
     _patch_sublime_noop(monkeypatch)
 
     cfg = load_config()
@@ -123,16 +143,19 @@ def test_sublime_creates_file_if_missing(monkeypatch, tmp_path):
     assert calls["with_clip"] == 1
     assert calls["paste"] == 1
     assert calls["last_text"] == payload
+    assert term["copy_all"] == 0
 
 
-def test_cmd_always_opens_new_window(monkeypatch):
+def test_cmd_always_opens_new_window_and_copies_terminal_to_clipboard(monkeypatch):
     _force_target(monkeypatch, "cmd")
     calls = _patch_clipboard(monkeypatch)
+    term = _patch_terminal_copy(monkeypatch)
     popen = _patch_popen(monkeypatch)
 
     cfg = load_config()
     cfg.debug = False
     cfg.press_enter_in_terminal = True
+    cfg.copy_terminal_text_to_clipboard = True
 
     cmd_text = "dir\n"
     route_payload(cfg, cmd_text, None, None)
@@ -143,16 +166,19 @@ def test_cmd_always_opens_new_window(monkeypatch):
     assert calls["paste"] == 1
     assert calls["last_text"] == cmd_text
     assert calls["last_enter"] is True
+    assert term["copy_all"] == 1
 
 
-def test_powershell_always_opens_new_window(monkeypatch):
+def test_powershell_always_opens_new_window_and_copies_terminal_to_clipboard(monkeypatch):
     _force_target(monkeypatch, "powershell")
     calls = _patch_clipboard(monkeypatch)
+    term = _patch_terminal_copy(monkeypatch)
     popen = _patch_popen(monkeypatch)
 
     cfg = load_config()
     cfg.debug = False
     cfg.press_enter_in_terminal = False
+    cfg.copy_terminal_text_to_clipboard = True
 
     ps_text = "Get-ChildItem\n"
     route_payload(cfg, ps_text, None, None)
@@ -163,3 +189,4 @@ def test_powershell_always_opens_new_window(monkeypatch):
     assert calls["paste"] == 1
     assert calls["last_text"] == ps_text
     assert calls["last_enter"] is False
+    assert term["copy_all"] == 1
