@@ -18,8 +18,11 @@ class Config:
     cooldown_s: float = 0.25
     press_enter_in_terminal: bool = False
 
-    # NUEVO: tras pegar (y opcionalmente ejecutar), copia TODO el texto del terminal al portapapeles
     copy_terminal_text_to_clipboard: bool = True
+
+    # sincronización por sentinel (sin sleep fijo)
+    terminal_done_timeout_s: float = 60.0
+    terminal_done_poll_s: float = 0.20
 
     cmd_title_contains: tuple = ("Command Prompt", "cmd.exe", "Símbolo del sistema")
     powershell_title_contains: tuple = ("Windows PowerShell", "PowerShell", "pwsh", "Terminal")
@@ -48,6 +51,8 @@ def load_config() -> Config:
         cooldown_s=0.25,
         press_enter_in_terminal=False,
         copy_terminal_text_to_clipboard=True,
+        terminal_done_timeout_s=60.0,
+        terminal_done_poll_s=0.20,
         cmd_launch=["cmd.exe"],
         powershell_launch=["powershell.exe"],
         sublime_launch=[r"C:\Program Files\Sublime Text\sublime_text.exe"],

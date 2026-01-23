@@ -1,0 +1,124 @@
+1 Cuando tetecta que el portapapeles tiene codigo para CMD, pega correctamente los comando pero copia antes de que los comandos se ejecuten.
+
+posible solucion: quitar el sentinel y ejecutar la siguiente logica: la linea final del portapapeles copiado debe contener c:
+
+
+escribe pruebas reales para confirmar que funciona
+
+PRUEBAS REALES (ordenadas)
+1️⃣ Prueba base (comando inmediato)
+from __future__ import annotations
+
+import os
+
+from src.fs_utils import ensure_file_exists
+
+
+def write_text_file(file_path: str, content: str) -> None:
+    """
+    Crea el archivo si no existe y luego escribe el contenido (overwrite).
+    """
+    if not file_path or not str(file_path).strip():
+        raise ValueError("file_path vacío en write_text_file()")
+
+    file_path = os.path.normpath(file_path)
+
+    ensure_file_exists(file_path)
+
+    parent = os.path.dirname(file_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+    with open(file_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(content or "")
+
+Objetivo: verificar que el token aparece y se detecta.
+
+Comando a enviar por el router:
+
+echo START
+
+
+Resultado esperado en la salida copiada:
+
+START
+__CHATGPT_ROUTER_DONE__
+
+
+✔️ Si el router espera y solo copia cuando aparece el token → OK
+
+2️⃣ Prueba con retardo (la importante)
+
+Objetivo: comprobar que NO copia antes de terminar.
+
+Comando:
+
+echo START
+timeout /t 3
+echo END
+
+
+Resultado esperado (orden exacto):
+
+START
+Waiting for 3 seconds...
+END
+__CHATGPT_ROUTER_DONE__
+
+
+✔️ Si copia antes de 3s, está MAL
+✔️ Si copia después de END + token, está BIEN
+
+3️⃣ Prueba de múltiples comandos largos
+
+Objetivo: validar que el sentinel es realmente el final.
+
+Comando:
+
+echo A
+timeout /t 2
+echo B
+timeout /t 2
+echo C
+
+
+Salida esperada:
+
+A
+Waiting for 2 seconds...
+B
+Waiting for 2 seconds...
+C
+__CHATGPT_ROUTER_DONE__
+
+
+2 esta ruta r"C:\Users\Usuario\tools\chatgpt_router\tests\test_terminal_sync_waits_for_last_token.py" no la convierte a ruta valida
+
+
+3 esto es un fallo  
+[DBG] FOUND (score=1.000 scale=1.0) attempts=1
+[23:38:50] Copiado detectado -> destino: sublime
+  [DBG] queue full: drop click
+  [DBG] queue full: drop click
+  [DBG] queue full: drop click
+  [DBG] queue full: drop click
+  [DBG] queue full: drop click
+  [DBG] queue full: drop click
+  [DBG] queue full: drop click
+
+  aparece cuando copio este codigo
+  cd C:\Users\Usuario\tools\chatgpt_router
+pytest -q
+
+
+
+
+
+
+
+5
+  [DBG] worker: clipboard unchanged (ignored)
+  aunque se repita el clipboard de ejecutarse
+
+
+############################ [DBG] worker: clipboard unchanged (ignored) - worker hace polling del portapapeles y, si el contenido no cambia, lo ignora para evitar reprocesar el mismo evento. ############################

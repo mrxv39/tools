@@ -13,9 +13,11 @@ def paste_into_active_window(press_enter: bool):
 
 def copy_all_text_from_active_window_to_clipboard():
     """
-    Copia al portapapeles todo el texto accesible de la ventana activa (CMD/PowerShell).
-    Nota: depende de atajos estándar (Ctrl+A, Ctrl+C).
+    CMD clásico: Ctrl+A a veces selecciona solo la línea actual en el primer intento.
+    Hacemos Ctrl+A dos veces para forzar 'Select All' del buffer visible, y luego Ctrl+C.
     """
+    pyautogui.hotkey("ctrl", "a")
+    time.sleep(0.05)
     pyautogui.hotkey("ctrl", "a")
     time.sleep(0.05)
     pyautogui.hotkey("ctrl", "c")

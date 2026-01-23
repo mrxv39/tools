@@ -11,28 +11,40 @@ except Exception as e:
     raise SystemExit(f"[ERROR] No se pudo importar pyautogui: {e}")
 
 
-# Región base (asimétrica) + margen extra (+30 en todas direcciones)
-_BASE_LEFT = 75
-_BASE_RIGHT = 100
+# Región base (asimétrica) + margen extra
+_BASE_LEFT = 150
+_BASE_RIGHT = 150
 _BASE_UP = 10
 _BASE_DOWN = 10
 
-_EXTRA_MARGIN = 40  # <-- REQUERIDO: +30 en todas direcciones
+_EXTRA_MARGIN = 80  # margen por defecto si NO se pasa half_box_px
 
-LEFT = _BASE_LEFT + _EXTRA_MARGIN      # 105
-RIGHT = _BASE_RIGHT + _EXTRA_MARGIN    # 130
+LEFT = _BASE_LEFT + _EXTRA_MARGIN      # 115
+RIGHT = _BASE_RIGHT + _EXTRA_MARGIN    # 140
 UP = _BASE_UP + _EXTRA_MARGIN          # 50
 DOWN = _BASE_DOWN + _EXTRA_MARGIN      # 50
 
 
-# Escalas multiescala (incluye pequeñas para encajar en región)
+# Escalas multiescala
 SCALES = [
     0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60,
     0.70, 0.80, 0.90, 1.00, 1.10, 1.20
 ]
 
 
-def _region_near_click(click_x: int, click_y: int) -> Tuple[int, int, int, int]:
+def _region_near_click(click_x: int, click_y: int, half_box_px: int | None) -> Tuple[int, int, int, int]:
+    """
+    Si half_box_px está presente, usa una caja cuadrada (2*half_box_px) centrada en el click.
+    Si no, usa la región asimétrica histórica (LEFT/RIGHT/UP/DOWN).
+    """
+    if half_box_px is not None:
+        hb = int(half_box_px)
+        left = max(0, click_x - hb)
+        top = max(0, click_y - hb)
+        width = hb * 2
+        height = hb * 2
+        return (left, top, width, height)
+
     left = max(0, click_x - LEFT)
     top = max(0, click_y - UP)
     width = LEFT + RIGHT
@@ -108,6 +120,7 @@ def find_within_window_near_click(
     poll_s: float,
     click_x: int,
     click_y: int,
+    half_box_px: int | None = None,
     debug: bool = False,
     debug_screenshots: bool = False,
     debug_dir: str = r".\debug_shots",
@@ -119,10 +132,12 @@ def find_within_window_near_click(
     t0 = time.time()
     attempts = 0
 
-    region = _region_near_click(click_x, click_y)
+    region = _region_near_click(click_x, click_y, half_box_px)
 
     if debug:
-        print(f"  [DBG] region={region} thr={confidence} window_s={window_s} poll_s={poll_s} want_present=True")
+        print(
+            f"  [DBG] region={region} thr={confidence} window_s={window_s} poll_s={poll_s} want_present=True"
+        )
 
     if debug_screenshots:
         bgr0 = _grab_region_bgr(region)
@@ -140,8 +155,10 @@ def find_within_window_near_click(
 
         if time.time() - t0 >= window_s:
             if debug:
-                print(f"  [DBG] TIMEOUT waiting PRESENT after {time.time() - t0:.2f}s attempts={attempts} "
-                      f"(best_score={best_score:.3f} best_scale={best_scale})")
+                print(
+                    f"  [DBG] TIMEOUT waiting PRESENT after {time.time() - t0:.2f}s attempts={attempts} "
+                    f"(best_score={best_score:.3f} best_scale={best_scale})"
+                )
             if debug_screenshots:
                 _save_debug_image(debug_dir, "find_region_end_timeout", region_bgr)
             return False
@@ -156,6 +173,7 @@ def wait_until_absent_near_click(
     poll_s: float,
     click_x: int,
     click_y: int,
+    half_box_px: int | None = None,
     debug: bool = False,
     debug_screenshots: bool = False,
     debug_dir: str = r".\debug_shots",
@@ -167,10 +185,12 @@ def wait_until_absent_near_click(
     t0 = time.time()
     attempts = 0
 
-    region = _region_near_click(click_x, click_y)
+    region = _region_near_click(click_x, click_y, half_box_px)
 
     if debug:
-        print(f"  [DBG] region={region} thr={confidence} window_s={window_s} poll_s={poll_s} want_present=False")
+        print(
+            f"  [DBG] region={region} thr={confidence} window_s={window_s} poll_s={poll_s} want_present=False"
+        )
 
     if debug_screenshots:
         bgr0 = _grab_region_bgr(region)
@@ -188,8 +208,10 @@ def wait_until_absent_near_click(
 
         if time.time() - t0 >= window_s:
             if debug:
-                print(f"  [DBG] TIMEOUT waiting ABSENT after {time.time() - t0:.2f}s attempts={attempts} "
-                      f"(best_score={best_score:.3f} best_scale={best_scale})")
+                print(
+                    f"  [DBG] TIMEOUT waiting ABSENT after {time.time() - t0:.2f}s attempts={attempts} "
+                    f"(best_score={best_score:.3f} best_scale={best_scale})"
+                )
             if debug_screenshots:
                 _save_debug_image(debug_dir, "absent_region_end_timeout", region_bgr)
             return False
