@@ -5,10 +5,16 @@ from typing import Optional, Tuple
 import cv2
 import numpy as np
 
+pyautogui = None
+_pyautogui_import_error: Exception | None = None
 try:
-    import pyautogui
+    import pyautogui as _pyautogui  # type: ignore
+    pyautogui = _pyautogui
 except Exception as e:
-    raise SystemExit(f"[ERROR] No se pudo importar pyautogui: {e}")
+    # In headless / CI environments there may be no display available.
+    # We keep the image-based detector code intact, but delay the failure
+    # until the first actual screenshot attempt.
+    _pyautogui_import_error = e
 
 
 # Región base (asimétrica) + margen extra
@@ -56,6 +62,9 @@ def _grab_region_bgr(region: Tuple[int, int, int, int]) -> np.ndarray:
     """
     region: (left, top, width, height)
     """
+    if pyautogui is None:
+        raise RuntimeError(f"pyautogui unavailable: {_pyautogui_import_error}")
+
     img = pyautogui.screenshot(region=region)  # PIL
     bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     return bgr

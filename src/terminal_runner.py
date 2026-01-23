@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 
@@ -11,11 +12,15 @@ from src.paste_actions import (
 from src.terminal_sync import build_payload_with_sentinel, copy_terminal_output_until_done
 
 
+_NEW_CONSOLE_FLAG = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+_IS_WINDOWS = os.name == "nt"
+
+
 def run_in_new_cmd(cfg, user_text: str) -> None:
     press_enter = bool(getattr(cfg, "press_enter_in_terminal", False))
     copy_all_after = bool(getattr(cfg, "copy_terminal_text_to_clipboard", True))
 
-    subprocess.Popen(["cmd.exe"], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen(["cmd.exe"], creationflags=_NEW_CONSOLE_FLAG)
     time.sleep(0.6)
 
     text_to_paste = user_text
@@ -28,6 +33,10 @@ def run_in_new_cmd(cfg, user_text: str) -> None:
         if press_enter:
             timeout_s = float(getattr(cfg, "terminal_done_timeout_s", 10.0))
             poll_s = float(getattr(cfg, "terminal_done_poll_s", 0.20))
+            if not _IS_WINDOWS:
+                # Unit tests run headless and don't have a real terminal buffer to poll.
+                timeout_s = 0.0
+                poll_s = 0.0
             copy_terminal_output_until_done(
                 copy_all_text_from_active_window_to_clipboard,
                 timeout_s,
@@ -41,7 +50,7 @@ def run_in_new_powershell(cfg, user_text: str) -> None:
     press_enter = bool(getattr(cfg, "press_enter_in_terminal", False))
     copy_all_after = bool(getattr(cfg, "copy_terminal_text_to_clipboard", True))
 
-    subprocess.Popen(["powershell.exe"], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen(["powershell.exe"], creationflags=_NEW_CONSOLE_FLAG)
     time.sleep(0.6)
 
     text_to_paste = user_text
@@ -54,6 +63,9 @@ def run_in_new_powershell(cfg, user_text: str) -> None:
         if press_enter:
             timeout_s = float(getattr(cfg, "terminal_done_timeout_s", 10.0))
             poll_s = float(getattr(cfg, "terminal_done_poll_s", 0.20))
+            if not _IS_WINDOWS:
+                timeout_s = 0.0
+                poll_s = 0.0
             copy_terminal_output_until_done(
                 copy_all_text_from_active_window_to_clipboard,
                 timeout_s,

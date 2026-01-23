@@ -5,6 +5,7 @@ import ctypes
 from src.classify import classify_target
 from src.file_writer import write_text_file
 from src.terminal_runner import run_in_new_cmd, run_in_new_powershell
+from src.terminal_gate import gate_terminal_payload
 
 
 def show_alert(title: str, message: str):
@@ -21,11 +22,19 @@ def route_payload(cfg, payload_text: str, file_path: str | None, project_folder:
     print(f"[{time.strftime('%H:%M:%S')}] Copiado detectado -> destino: {target}")
 
     if target == "cmd":
-        run_in_new_cmd(cfg, payload_text)
+        gate = gate_terminal_payload(payload_text)
+        if not gate.should_execute:
+            show_alert("Ejecución bloqueada", gate.reason)
+            return
+        run_in_new_cmd(cfg, gate.payload)
         return
 
     if target == "powershell":
-        run_in_new_powershell(cfg, payload_text)
+        gate = gate_terminal_payload(payload_text)
+        if not gate.should_execute:
+            show_alert("Ejecución bloqueada", gate.reason)
+            return
+        run_in_new_powershell(cfg, gate.payload)
         return
 
     # Caso: NO es cmd ni powershell => debe venir ruta en primera línea del portapapeles (ya parseada)

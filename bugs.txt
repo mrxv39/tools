@@ -42,3 +42,29 @@ pytest -q
 
 ############################ 
 [DBG] worker: clipboard unchanged (ignored) - worker hace polling del portapapeles y, si el contenido no cambia, lo ignora para evitar reprocesar el mismo evento. ############################
+
+simplificar el script quitandola deteccion de imagenes
+si detecta en el portpapeles comando cmd ejecuta cmd si detecta comandos powershell ejecuta power shell y si detecta ruta en la primera linea y codigo para editor que creee o edite el archivo o alerta si no hay ruta o la ruta no es valida.
+
+Para solucionar el problema de copiar antes de que terminen de ejecutarse los comandos:
+tercera - primer comando ejecutado y ultima linea  deben ser iguales 
+
+Microsoft Windows [Versión 10.0.19045.6466]
+(c) Microsoft Corporation. Todos los derechos reservados.
+
+C:\Users\Usuario\tools\chatgpt_router>git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+
+C:\Users\Usuario\tools\chatgpt_router>pytest -q
+C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytest_asyncio\plugin.py:247: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+..........                                                                                                       [100%]
+10 passed in 60.32s (0:01:00)
+
+C:\Users\Usuario\tools\chatgpt_router>
+
